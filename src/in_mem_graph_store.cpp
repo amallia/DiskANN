@@ -43,16 +43,16 @@ const std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i
 void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
 {
     // _graph[i].emplace_back(neighbour_id);
-    // std::vector<uint32_t> data = {neighbour_id};
-    // std::vector<uint8_t> compressed_data(2 * data.size() * sizeof(uint32_t));
-    // size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
-    // compressed_data.resize(compressed_size);
-    // _graph[i].insert(_graph[i].end(), compressed_data.begin(), compressed_data.end());
-    // _degree_counts[i] += 1;
-    // if (_max_observed_degree < _graph[i].size())
-    // {
-    //     _max_observed_degree = (uint32_t)(_graph[i].size());
-    // }
+    std::vector<uint32_t> data = {neighbour_id};
+    std::vector<uint8_t> compressed_data(2 * data.size() * sizeof(uint32_t));
+    size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
+    compressed_data.resize(compressed_size);
+    _graph[i].insert(_graph[i].end(), compressed_data.begin(), compressed_data.end());
+    _degree_counts[i] += 1;
+    if (_max_observed_degree < _degree_counts[i])
+    {
+        _max_observed_degree = (uint32_t)(_degree_counts[i]);
+    }
 }
 
 void InMemGraphStore::clear_neighbours(const location_t i)
@@ -182,9 +182,9 @@ int InMemGraphStore::save_graph(const std::string &index_path_prefix, const size
     // Note: num_points = _nd + _num_frozen_points
     for (uint32_t i = 0; i < num_points; i++)
     {
-        uint32_t GK = (uint32_t)_graph[i].size();
+        uint32_t GK = (uint32_t)_degree_counts[i];
         out.write((char *)&GK, sizeof(uint32_t));
-        out.write((char *)_graph[i].data(), GK * sizeof(uint32_t));
+        out.write((char *)_graph[i].data(), _graph[i].size() * sizeof(uint8_t));
         max_degree = _degree_counts[i] > max_degree ? (uint32_t)_degree_counts[i] : max_degree;
         index_size += (size_t)(sizeof(uint32_t) * (GK + 1));
     }
