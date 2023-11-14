@@ -35,7 +35,7 @@ const std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i
     const std::vector<uint8_t> &compressed_data = _graph.at(i);
     
     // Decode the compressed data to get the original neighbors
-    std::vector<location_t> neighbors = decode_data(compressed_data);
+    std::vector<location_t> neighbors = decode_data(compressed_data, i);
     
     return neighbors;
 }
@@ -48,7 +48,7 @@ void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
     size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
     compressed_data.resize(compressed_size);
     _graph[i].insert(_graph[i].end(), compressed_data.begin(), compressed_data.end());
-
+    _degree_counts[i] += 1;
     if (_max_observed_degree < _graph[i].size())
     {
         _max_observed_degree = (uint32_t)(_graph[i].size());
@@ -62,6 +62,9 @@ void InMemGraphStore::clear_neighbours(const location_t i)
 void InMemGraphStore::swap_neighbours(const location_t a, location_t b)
 {
     _graph[a].swap(_graph[b]);
+    auto tmp = _degree_counts[a];
+    _degree_counts[a] = _degree_counts[b];
+    _degree_counts[b] = tmp;
 };
 
 void InMemGraphStore::set_neighbours(const location_t i, std::vector<location_t> &neighbours)
@@ -71,6 +74,7 @@ void InMemGraphStore::set_neighbours(const location_t i, std::vector<location_t>
     compressed_data.resize(compressed_size);
 
     _graph[i] = compressed_data;
+    _degree_counts[i] += neighbours.size();
 
     // _graph[i].assign(neighbours.begin(), neighbours.end());
     if (_max_observed_degree < neighbours.size())
@@ -82,6 +86,7 @@ void InMemGraphStore::set_neighbours(const location_t i, std::vector<location_t>
 size_t InMemGraphStore::resize_graph(const size_t new_size)
 {
     _graph.resize(new_size);
+    _degree_counts.resize(new_size);
     set_total_points(new_size);
     return _graph.size();
 }
@@ -89,6 +94,7 @@ size_t InMemGraphStore::resize_graph(const size_t new_size)
 void InMemGraphStore::clear_graph()
 {
     _graph.clear();
+    _degree_counts.clear();
 }
 
 std::tuple<uint32_t, uint32_t, size_t> InMemGraphStore::load_impl(const std::string &filename,

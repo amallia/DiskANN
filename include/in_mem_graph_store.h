@@ -43,11 +43,10 @@ class InMemGraphStore : public AbstractGraphStore
                    const uint32_t start);
 
   private:
-    std::vector<uint32_t> decode_data(const std::vector<uint8_t> &compressed_data) const
+    std::vector<uint32_t> decode_data(const std::vector<uint8_t> &compressed_data, size_t i ) const
     {
-        std::vector<uint32_t> result(compressed_data.size() / sizeof(uint32_t));
-        size_t decoded_size = VarIntGB<>().decodeArray(compressed_data.data(), compressed_data.size(), result.data());
-        result.resize(decoded_size / sizeof(uint32_t));
+        std::vector<uint32_t> result(_degree_counts[i]);
+        size_t decoded_size = VarIntGB<>().decodeArray(compressed_data.data(), _degree_counts[i], result.data());
         return result;
     }
 
@@ -55,6 +54,8 @@ class InMemGraphStore : public AbstractGraphStore
     uint32_t _max_observed_degree = 0;
 
     std::vector<std::vector<uint8_t>> _graph;
+    std::vector<std::size_t> _degree_counts;
+
 };
 
 } // namespace diskann
