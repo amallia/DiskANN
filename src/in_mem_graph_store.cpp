@@ -43,21 +43,22 @@ const std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i
 void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
 {
     // _graph[i].emplace_back(neighbour_id);
-    std::vector<uint32_t> data = {neighbour_id};
-    std::vector<uint8_t> compressed_data(data.size() * sizeof(uint32_t));
-    size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
-    compressed_data.resize(compressed_size);
-    _graph[i].insert(_graph[i].end(), compressed_data.begin(), compressed_data.end());
-    _degree_counts[i] += 1;
-    if (_max_observed_degree < _graph[i].size())
-    {
-        _max_observed_degree = (uint32_t)(_graph[i].size());
-    }
+    // std::vector<uint32_t> data = {neighbour_id};
+    // std::vector<uint8_t> compressed_data(2 * data.size() * sizeof(uint32_t));
+    // size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
+    // compressed_data.resize(compressed_size);
+    // _graph[i].insert(_graph[i].end(), compressed_data.begin(), compressed_data.end());
+    // _degree_counts[i] += 1;
+    // if (_max_observed_degree < _graph[i].size())
+    // {
+    //     _max_observed_degree = (uint32_t)(_graph[i].size());
+    // }
 }
 
 void InMemGraphStore::clear_neighbours(const location_t i)
 {
     _graph[i].clear();
+    _degree_counts[i] = 0; 
 };
 void InMemGraphStore::swap_neighbours(const location_t a, location_t b)
 {
