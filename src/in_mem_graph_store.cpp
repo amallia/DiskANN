@@ -181,11 +181,11 @@ int InMemGraphStore::save_graph(const std::string &index_path_prefix, const size
     // Note: num_points = _nd + _num_frozen_points
     for (uint32_t i = 0; i < num_points; i++)
     {
-        // uint32_t GK = (uint32_t)_graph[i].size();
-        // out.write((char *)&GK, sizeof(uint32_t));
-        // out.write((char *)_graph[i].data(), GK * sizeof(uint32_t));
-        // max_degree = _graph[i].size() > max_degree ? (uint32_t)_graph[i].size() : max_degree;
-        // index_size += (size_t)(sizeof(uint32_t) * (GK + 1));
+        uint32_t GK = (uint32_t)_graph[i].size();
+        out.write((char *)&GK, sizeof(uint32_t));
+        out.write((char *)_graph[i].data(), GK * sizeof(uint32_t));
+        max_degree = _degree_counts[i] > max_degree ? (uint32_t)_degree_counts[i] : max_degree;
+        index_size += (size_t)(sizeof(uint32_t) * (GK + 1));
     }
     out.seekp(file_offset, out.beg);
     out.write((char *)&index_size, sizeof(uint64_t));
