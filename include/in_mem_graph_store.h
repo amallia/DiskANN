@@ -19,7 +19,7 @@ class InMemGraphStore : public AbstractGraphStore
     virtual int store(const std::string &index_path_prefix, const size_t num_points, const size_t num_frozen_points,
                       const uint32_t start) override;
 
-    virtual const std::vector<location_t> &get_neighbours(const location_t i) const override;
+    virtual std::vector<location_t> get_neighbours(const location_t i) const override;
     virtual void add_neighbour(const location_t i, location_t neighbour_id) override;
     virtual void clear_neighbours(const location_t i) override;
     virtual void swap_neighbours(const location_t a, location_t b) override;
@@ -42,10 +42,13 @@ class InMemGraphStore : public AbstractGraphStore
                    const uint32_t start);
 
   private:
+
     size_t _max_range_of_graph = 0;
     uint32_t _max_observed_degree = 0;
 
-    std::vector<std::vector<uint32_t>> _graph;
+    std::vector<std::vector<uint8_t>> _graph2;
+    std::vector<uint32_t> _degree_counts;
+
 };
 
 } // namespace diskann
