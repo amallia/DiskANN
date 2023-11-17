@@ -38,42 +38,43 @@ std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i) cons
         auto nvalue = neighbours.size();
         VariableByte().decodeFromByteArray(src, _graph2[i].size(), neighbours.data(), nvalue);
     }
-    if(i == 22704){
-        diskann::cout << "\n====== GET NEIGHBOURS =====\n"  << std::flush;
-        for (auto n : neighbours)
-            diskann::cout <<  std::to_string(n) << "\n" << std::flush;
-        diskann::cout << "====== GET NEIGHBOURS =====\n "  << std::flush;
+    // if(i == 22704){
+    //     diskann::cout << "\n====== GET NEIGHBOURS =====\n"  << std::flush;
+    //     for (auto n : neighbours)
+    //         diskann::cout <<  std::to_string(n) << "\n" << std::flush;
+    //     diskann::cout << "====== GET NEIGHBOURS =====\n "  << std::flush;
 
-    }
+    // }
     
-
-    // std::vector<uint8_t> compressed_data = _graph2[i];
-    // // diskann::cout << i << " " << _graph2[i].size() << "\n" << std::flush;
-    // // // Decode the compressed data to get the original neighbours
-    // std::vector<location_t> neighbours = decode_data(compressed_data, i);
-
     return neighbours;
-    // return _graph.at(i);
+    
 }
 
 void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
 {
 
-    if(i == 22704){
-        diskann::cout << "\n====== ADD NEIGHBOURS =====\n "  << std::flush;
-        diskann::cout << i << " " << neighbour_id << "\n" << std::flush;
-        diskann::cout << "\n====== ADD NEIGHBOURS =====\n "  << std::flush;
-    }
+    // if(i == 22704){
+    //     diskann::cout << "\n====== ADD NEIGHBOURS =====\n"  << std::flush;
+    //     diskann::cout << "Adding: "  << std::flush;
+    //     diskann::cout << neighbour_id << "\n" << std::flush;
+    // }
 
 
     std::vector<location_t> neighbours;
-    if (neighbours.size() > 0) {
+    if (_degree_counts[i] > 0) {
         auto* src = const_cast<uint8_t*>(_graph2[i].data());
         
         neighbours.resize(_degree_counts[i]);
         auto nvalue = neighbours.size();
         VariableByte().decodeFromByteArray(src, _graph2[i].size(), neighbours.data(), nvalue);
     }
+
+    // if(i == 22704){
+    //     diskann::cout << "Existing: \n"  << std::flush;
+    //     for (auto n : neighbours)
+    //         diskann::cout <<  std::to_string(n) << "\n" << std::flush;
+    //     diskann::cout << "====== ADD NEIGHBOURS =====\n "  << std::flush;
+    // }
     neighbours.push_back(neighbour_id);
     _degree_counts[i] += 1;
 
@@ -86,12 +87,6 @@ void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
     
         _graph2[i].assign(buf.begin(), buf.begin() + nvalue);    
     }
-    // std::vector<uint32_t> data = {neighbour_id};
-    // std::vector<uint8_t> compressed_data(2 * data.size() * sizeof(uint32_t));
-    // size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
-    // compressed_data.resize(compressed_size);
-    // _graph2[i].insert(_graph2[i].end(), compressed_data.begin(), compressed_data.end());
-    
 
     if (_max_observed_degree < _degree_counts[i])
     {
@@ -117,12 +112,12 @@ void InMemGraphStore::swap_neighbours(const location_t a, location_t b)
 void InMemGraphStore::set_neighbours(const location_t i, std::vector<location_t> &neighbours)
 {
 
-    if(i == 22704){
-        diskann::cout << "\n====== SET NEIGHBOURS =====\n "  << std::flush;
-        for (auto n : neighbours)
-            diskann::cout << n << "\n" << std::flush;
-        diskann::cout << "====== SET NEIGHBOURS =====\n "  << std::flush;
-    }
+    // if(i == 22704){
+    //     diskann::cout << "\n====== SET NEIGHBOURS =====\n"  << std::flush;
+    //     for (auto n : neighbours)
+    //         diskann::cout << n << "\n" << std::flush;
+    //     diskann::cout << "====== SET NEIGHBOURS =====\n "  << std::flush;
+    // }
 
     auto* src = const_cast<uint32_t*>(neighbours.data());
     std::vector<std::uint8_t> buf;
