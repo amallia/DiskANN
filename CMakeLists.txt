@@ -22,8 +22,6 @@ set(CMAKE_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(external)
-include_directories(external)
 
 if(NOT MSVC)
 	set(CMAKE_CXX_COMPILER g++)
