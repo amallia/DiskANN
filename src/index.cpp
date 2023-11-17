@@ -1451,7 +1451,7 @@ void Index<T, TagT, LabelT>::prune_all_neighbors(const uint32_t max_degree, cons
     {
         if (i < _nd || i >= _max_points)
         {
-            const std::vector<uint32_t> &pool = _graph_store->get_neighbours((location_t)i);
+            std::vector<uint32_t> pool = _graph_store->get_neighbours((location_t)i);
             max = (std::max)(max, pool.size());
             min = (std::min)(min, pool.size());
             total += pool.size();
@@ -3255,7 +3255,8 @@ template <typename T, typename TagT, typename LabelT> void Index<T, TagT, LabelT
         cur_node_offset += _data_len;
         uint32_t k = (uint32_t)_graph_store->get_neighbours(i).size();
         std::memcpy(cur_node_offset, &k, sizeof(uint32_t));
-        std::memcpy(cur_node_offset + sizeof(uint32_t), _graph_store->get_neighbours(i).data(), k * sizeof(uint32_t));
+        auto neighbours = _graph_store->get_neighbours(i);
+        std::memcpy(cur_node_offset + sizeof(uint32_t), neighbours.data(), k * sizeof(uint32_t));
         // std::vector<uint32_t>().swap(_graph_store->get_neighbours(i));
         _graph_store->clear_neighbours(i);
     }

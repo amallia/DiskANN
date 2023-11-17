@@ -3,10 +3,11 @@
 
 #include "in_mem_graph_store.h"
 #include "utils.h"
-#include "streamvbyte/include/streamvbyte.h"
+#include "variablebyte.h"
 
 namespace diskann
 {
+    
 InMemGraphStore::InMemGraphStore(const size_t total_pts, const size_t reserve_graph_degree)
     : AbstractGraphStore(total_pts, reserve_graph_degree)
 {
@@ -30,10 +31,21 @@ int InMemGraphStore::store(const std::string &index_path_prefix, const size_t nu
 }
 std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i) const
 {
+    auto* src = const_cast<uint8_t*>(_graph2[i].data());
     std::vector<location_t> neighbours;
-    neighbours.resize(_degree_counts[i]);
-    auto* in = const_cast<uint8_t*>(_graph2[i].data());
-    streamvbyte_decode(in, neighbours.data(), _degree_counts[i]);
+    if(_degree_counts[i] != 0){
+        neighbours.resize(_degree_counts[i]);
+        auto nvalue = neighbours.size();
+        VariableByte().decodeFromByteArray(src, _graph2[i].size(), neighbours.data(), nvalue);
+    }
+    if(i == 22704){
+        diskann::cout << "\n====== GET NEIGHBOURS =====\n"  << std::flush;
+        for (auto n : neighbours)
+            diskann::cout <<  std::to_string(n) << "\n" << std::flush;
+        diskann::cout << "====== GET NEIGHBOURS =====\n "  << std::flush;
+
+    }
+    
 
     // std::vector<uint8_t> compressed_data = _graph2[i];
     // // diskann::cout << i << " " << _graph2[i].size() << "\n" << std::flush;
@@ -47,22 +59,33 @@ std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i) cons
 void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
 {
 
+    if(i == 22704){
+        diskann::cout << "\n====== ADD NEIGHBOURS =====\n "  << std::flush;
+        diskann::cout << i << " " << neighbour_id << "\n" << std::flush;
+        diskann::cout << "\n====== ADD NEIGHBOURS =====\n "  << std::flush;
+    }
+
+
     std::vector<location_t> neighbours;
-    neighbours.resize(_degree_counts[i]);
-    auto* in = const_cast<uint8_t*>(_graph2[i].data());
-    streamvbyte_decode(in, neighbours.data(), _degree_counts[i]);
+    if (neighbours.size() > 0) {
+        auto* src = const_cast<uint8_t*>(_graph2[i].data());
+        
+        neighbours.resize(_degree_counts[i]);
+        auto nvalue = neighbours.size();
+        VariableByte().decodeFromByteArray(src, _graph2[i].size(), neighbours.data(), nvalue);
+    }
     neighbours.push_back(neighbour_id);
     _degree_counts[i] += 1;
+
+    {
+        auto* src = const_cast<uint32_t*>(neighbours.data());
+        std::vector<std::uint8_t> buf;
+        buf.resize(neighbours.size() * 8);
+        auto nvalue = buf.size();
+        VariableByte().encodeToByteArray(src, neighbours.size(), buf.data(), nvalue);
     
-
-
-    auto* src = const_cast<uint32_t*>(neighbours.data());
-    std::vector<std::uint8_t> buf;
-    buf.resize(streamvbyte_max_compressedbytes(neighbours.size()));
-
-    size_t out_len = streamvbyte_encode(src, neighbours.size(), buf.data());
-    _graph2[i].assign(buf.begin(), buf.begin() + out_len);
-
+        _graph2[i].assign(buf.begin(), buf.begin() + nvalue);    
+    }
     // std::vector<uint32_t> data = {neighbour_id};
     // std::vector<uint8_t> compressed_data(2 * data.size() * sizeof(uint32_t));
     // size_t compressed_size = VarIntGB<>().encodeArray(data.data(), data.size(), compressed_data.data());
@@ -90,23 +113,23 @@ void InMemGraphStore::swap_neighbours(const location_t a, location_t b)
 
 };
 
-constexpr std::size_t streamvbyte_max_compressedbytes(std::uint32_t length)
-{
-    // number of control bytes:
-    size_t cb = (length + 3) / 4;
-    // maximum number of control bytes:
-    size_t db = (size_t)length * sizeof(uint32_t);
-    return cb + db;
-}
 
 void InMemGraphStore::set_neighbours(const location_t i, std::vector<location_t> &neighbours)
 {
 
+    if(i == 22704){
+        diskann::cout << "\n====== SET NEIGHBOURS =====\n "  << std::flush;
+        for (auto n : neighbours)
+            diskann::cout << n << "\n" << std::flush;
+        diskann::cout << "====== SET NEIGHBOURS =====\n "  << std::flush;
+    }
+
     auto* src = const_cast<uint32_t*>(neighbours.data());
     std::vector<std::uint8_t> buf;
-    buf.resize(streamvbyte_max_compressedbytes(neighbours.size()));
-    size_t out_len = streamvbyte_encode(src, neighbours.size(), buf.data());
-    _graph2[i].assign(buf.begin(), buf.begin() + out_len);
+    buf.resize(neighbours.size() * 8);
+    auto nvalue = buf.size();
+    VariableByte().encodeToByteArray(src, neighbours.size(), buf.data(), nvalue);
+    _graph2[i].assign(buf.begin(), buf.begin() + nvalue);
 
     _degree_counts[i] = neighbours.size();
 
@@ -240,15 +263,11 @@ std::tuple<uint32_t, uint32_t, size_t> InMemGraphStore::load_impl(const std::str
 
         cc += k;
         ++nodes_read;
-        std::vector<uint32_t> tmp(k);
+        std::vector<uint8_t> tmp(k);
         tmp.reserve(k);
-        in.read((char *)tmp.data(), k * sizeof(uint32_t));
-        auto* src = const_cast<uint32_t*>(tmp.data());
-        std::vector<std::uint8_t> buf;
-        buf.resize(streamvbyte_max_compressedbytes(tmp.size()));
-        size_t out_len = streamvbyte_encode(src, tmp.size(), buf.data());
-        _graph2[nodes_read - 1].assign(buf.begin(), buf.begin() + out_len);
-        bytes_read += sizeof(uint32_t) * ((size_t)k + 1);
+        in.read((char *)tmp.data(), k * sizeof(uint8_t));
+        _graph2[nodes_read - 1].assign(tmp.begin(), tmp.end());
+        bytes_read += sizeof(uint8_t) * ((size_t)k + sizeof(uint32_t));
         if (nodes_read % 10000000 == 0)
             diskann::cout << "." << std::flush;
         if (k > _max_range_of_graph)
