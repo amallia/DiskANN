@@ -38,12 +38,11 @@ std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i) cons
         auto nvalue = neighbours.size();
         VariableByte().decodeFromByteArray(src, _graph2[i].size(), neighbours.data(), nvalue);
     }
-    // if(i == 22704){
-    //     diskann::cout << "\n====== GET NEIGHBOURS =====\n"  << std::flush;
-    //     for (auto n : neighbours)
-    //         diskann::cout <<  std::to_string(n) << "\n" << std::flush;
-    //     diskann::cout << "====== GET NEIGHBOURS =====\n "  << std::flush;
-
+    // if(i == 2059){
+        // diskann::cout << "\n====== GET NEIGHBOURS =====\n"  << std::flush;
+        // for (auto n : neighbours)
+        //     diskann::cout <<  std::to_string(n) << "\n" << std::flush;
+        // diskann::cout << "====== GET NEIGHBOURS =====\n "  << std::flush;
     // }
     
     return neighbours;
@@ -53,7 +52,7 @@ std::vector<location_t> InMemGraphStore::get_neighbours(const location_t i) cons
 void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
 {
 
-    // if(i == 22704){
+    // if(i == 2059){
     //     diskann::cout << "\n====== ADD NEIGHBOURS =====\n"  << std::flush;
     //     diskann::cout << "Adding: "  << std::flush;
     //     diskann::cout << neighbour_id << "\n" << std::flush;
@@ -69,7 +68,7 @@ void InMemGraphStore::add_neighbour(const location_t i, location_t neighbour_id)
         VariableByte().decodeFromByteArray(src, _graph2[i].size(), neighbours.data(), nvalue);
     }
 
-    // if(i == 22704){
+    // if(i == 2059){
     //     diskann::cout << "Existing: \n"  << std::flush;
     //     for (auto n : neighbours)
     //         diskann::cout <<  std::to_string(n) << "\n" << std::flush;
@@ -112,7 +111,7 @@ void InMemGraphStore::swap_neighbours(const location_t a, location_t b)
 void InMemGraphStore::set_neighbours(const location_t i, std::vector<location_t> &neighbours)
 {
 
-    // if(i == 22704){
+    // if(i == 2059){
     //     diskann::cout << "\n====== SET NEIGHBOURS =====\n"  << std::flush;
     //     for (auto n : neighbours)
     //         diskann::cout << n << "\n" << std::flush;
@@ -262,7 +261,10 @@ std::tuple<uint32_t, uint32_t, size_t> InMemGraphStore::load_impl(const std::str
         tmp.reserve(k);
         in.read((char *)tmp.data(), k * sizeof(uint8_t));
         _graph2[nodes_read - 1].assign(tmp.begin(), tmp.end());
-        bytes_read += sizeof(uint8_t) * ((size_t)k + sizeof(uint32_t));
+        uint32_t count;
+        in.read((char *)&count, sizeof(uint32_t));
+        _degree_counts[nodes_read - 1] = count;
+        bytes_read += sizeof(uint8_t) * ((size_t)k + 2 * sizeof(uint32_t));
         if (nodes_read % 10000000 == 0)
             diskann::cout << "." << std::flush;
         if (k > _max_range_of_graph)
@@ -298,8 +300,10 @@ int InMemGraphStore::save_graph(const std::string &index_path_prefix, const size
         uint32_t GK = (uint32_t)_graph2[i].size();
         out.write((char *)&GK, sizeof(uint32_t));
         out.write((char *)_graph2[i].data(), GK * sizeof(uint8_t));
+        uint32_t count = _degree_counts[i];
+        out.write((char *)&count, sizeof(uint32_t));
         max_degree = _degree_counts[i] > max_degree ? (uint32_t)_degree_counts[i] : max_degree;
-        index_size += (size_t)(sizeof(uint8_t) * GK + sizeof(uint32_t));
+        index_size += (size_t)(sizeof(uint8_t) * GK + 2* sizeof(uint32_t));
     }
     out.seekp(file_offset, out.beg);
     out.write((char *)&index_size, sizeof(uint64_t));
